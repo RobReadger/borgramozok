@@ -1,133 +1,104 @@
-import React, { useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three";
+import { useRef, useEffect } from 'react';
+import * as THREE from 'three';
 
-interface WineWaveProps {
-  pouring?: boolean;
-}
+const WineBackground = () => {
+  const mountRef = useRef(null);
 
-interface WineBackgroundProps {
-  pouring?: boolean;
-  style?: React.CSSProperties;
-}
+  useEffect(() => {
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x800020); // Soft off-white background
 
-const WineWave: React.FC<WineWaveProps> = ({ pouring = false }) => {
-  const meshRef = useRef<THREE.Line>(null);
-  const pourRef = useRef<THREE.Mesh>(null);
+    // Camera (positioned for a nice view without interaction)
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 1.5, 3);
 
-  // Create wave geometry
-  const { positions, count } = useMemo(() => {
-    const count = 100;
-    const positions = new Float32Array(count * 3);
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    mountRef.current.appendChild(renderer.domElement);
 
-    for (let i = 0; i < count; i++) {
-      const x = (i / (count - 1)) * 2 - 1; // -1 to 1
-      positions[i * 3] = x * 10; // x position
-      positions[i * 3 + 1] = Math.sin(x * Math.PI * 2) * 0.5 - 2; // y position
-      positions[i * 3 + 2] = 0; // z position
+    // Lights (simplified for background)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(1, 2, 3);
+    scene.add(directionalLight);
+
+    // Subtle floating particles (like dust or bubbles)
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particleCount = 100;
+    const posArray = new Float32Array(particleCount * 3);
+
+    for(let i = 0; i < particleCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 10;
     }
 
-    return { positions, count };
-  }, []);
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      size: 0.07,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.5
+    });
 
-  // Create pouring geometry
-  const pourGeometry = useMemo(() => {
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.2, 0);
-    shape.bezierCurveTo(-0.2, 0, -0.1, -1, 0, -1.5);
-    shape.bezierCurveTo(0, -1.5, 0.1, -1, 0.2, 0);
-    shape.bezierCurveTo(0.2, 0, 0.1, 0.2, 0, 0.2);
-    shape.bezierCurveTo(0, 0.2, -0.1, 0.2, -0.2, 0);
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
 
-    const extrudeSettings: THREE.ExtrudeGeometryOptions = {
-      steps: 1,
-      depth: 0.2,
-      bevelEnabled: false,
+    // Animation loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      // Subtle floating animation for particles
+      const positions = particlesGeometry.attributes.position.array;
+      for(let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        positions[i3 + 1] += 0.002;
+        if(positions[i3 + 1] > 5) {
+          positions[i3 + 1] = -5;
+        }
+      }
+      particlesGeometry.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
     };
 
-    return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    animate();
+
+    // Handle resize
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      mountRef.current?.removeChild(renderer.domElement);
+    };
   }, []);
 
-  // Animation loop
-  useFrame(({ clock }) => {
-    const time = clock.getElapsedTime();
-
-    // Wave animation
-    if (meshRef.current) {
-      const positions = meshRef.current.geometry.attributes.position
-        .array as Float32Array;
-
-      for (let i = 0; i < count; i++) {
-        const x = (i / (count - 1)) * 2 - 1;
-        positions[i * 3 + 1] = Math.sin(x * Math.PI * 3 + time) * 0.3 - 2;
-      }
-
-      meshRef.current.geometry.attributes.position.needsUpdate = true;
-    }
-
-    // Pouring animation
-    if (pourRef.current && pouring) {
-      pourRef.current.position.y = Math.sin(time * 0.5) * 0.1 + 4;
-      pourRef.current.rotation.z = Math.sin(time * 0.3) * 0.1;
-    }
-  });
-
   return (
-    <group>
-      {/* Wine wave */}
-      <line ref={meshRef}>
-        <bufferGeometry attach="geometry">
-          <bufferAttribute
-            attach="attributes-position"
-            array={positions}
-            count={positions.length / 3}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial attach="material" color="#6d0a2d" linewidth={2} />
-      </line>
-
-      {/* Wine fill */}
-      <mesh position={[0, -2.5, 0]}>
-        <planeGeometry args={[20, 3, 1]} />
-        <meshBasicMaterial color="#6d0a2d" transparent opacity={0.8} />
-      </mesh>
-
-      {/* Optional pouring animation */}
-      {pouring && (
-        <mesh ref={pourRef} position={[0, 4, 0]}>
-          <primitive object={pourGeometry} attach="geometry" />
-          <meshBasicMaterial color="#6d0a2d" transparent opacity={0.7} />
-        </mesh>
-      )}
-    </group>
-  );
-};
-
-const WineBackground: React.FC<WineBackgroundProps> = ({
-  pouring = false,
-  style = {},
-}) => {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: -1,
-        overflow: "hidden",
-        ...style,
-      }}
-    >
-      <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
-        style={{ background: "transparent" }}
-      >
-        <WineWave pouring={pouring} />
-      </Canvas>
-    </div>
+      <div
+          ref={mountRef}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: -1,
+            opacity: 0.7
+          }}
+      />
   );
 };
 

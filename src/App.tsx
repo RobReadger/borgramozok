@@ -6,8 +6,8 @@ import {
   Typography,
 } from "@mui/material";
 import "./App.scss";
-import WineBackground from "./WineBackground";
 import ImageCarousel from "./ImageCarousel";
+import WineBackground from "./WineBackground.tsx";
 
 const theme = createTheme({
   typography: {
@@ -18,7 +18,7 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      {/* <WineBackground /> */}
+      <WineBackground />
       <div className="container">
         {/* <Typography mt="2rem" variant="h2" textAlign="center" mb="2rem">
           Borgramozók
