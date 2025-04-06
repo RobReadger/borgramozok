@@ -8,6 +8,7 @@ import {
 import "./App.scss";
 import ImageCarousel from "./ImageCarousel";
 import WineBackground from "./WineBackground.tsx";
+import MemeHover from "./MemeHover.tsx";
 
 const theme = createTheme({
   typography: {
@@ -45,8 +46,11 @@ function App() {
             width="50%"
           >
             <Paper elevation={3} sx={{ padding: "2rem" }}>
+              <Typography variant="h5" textAlign="center" mb="1rem">
+                <MemeHover/>
+              </Typography>
               <Typography variant="h5" textAlign="center" mb="2rem">
-                Borgramozók – Kód, bor, káosz
+                Kód, bor, káosz
               </Typography>
               <Typography fontSize={20} padding="0 2rem" align="justify">
                 Mi vagyunk a Borgramozók – egy egyetemi baráti társaság, ahol a
@@ -86,9 +90,7 @@ function App() {
                 align="justify"
                 ml="2rem"
               >
-                1 PhD hallgató – A tudomány élő szőlőtőkéje, aki már háromszor
-                újraírta a disszertációját, de a Borgramozókkal való ivásról
-                sosem mondana le.
+                1 PhD hallgató – A tudomány élő szőlőtőkéje, aki a disszertációját is előlről kezdené, de egy ivást sem hagyna ki társaiért.
               </Typography>
               <Typography fontSize={20} padding="0 2rem" align="justify">
                 Ismertetőjegyek: A kedvenc adatstruktúránk a borfától függ. A
